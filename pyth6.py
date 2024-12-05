@@ -2,19 +2,11 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import random
 import os
+import requests
 
 
 # Функция для создания нового файла с числами
 def create_file(filename):
-    """
-    Создаёт текстовый файл с указанным именем и записывает в него 10 случайных чисел от 1 до 100.
-
-    Аргументы:
-        filename (str): Имя создаваемого файла.
-
-    Возвращает:
-        list: Список из 10 случайных чисел, записанных в файл.
-    """
     with open(filename, "w") as file:
         random_numbers = [str(random.randint(1, 100)) for _ in range(10)]
         file.write(" ".join(random_numbers))
@@ -23,9 +15,6 @@ def create_file(filename):
 
 # Функция для выбора или создания файла через диалоговое окно
 def choose_file():
-    """
-    Открывает диалоговое окно для выбора или создания файла. После выбора файла записывает его имя в поле ввода.
-    """
     filename = filedialog.asksaveasfilename(
         title="Выберите или создайте файл",
         defaultextension=".txt",
@@ -38,16 +27,6 @@ def choose_file():
 
 # Функция для обработки выбранного файла
 def process_file():
-    """
-    Проверяет наличие файла по указанному имени. Если файл не найден, создаёт новый с 10 случайными числами.
-    Если файл существует, читает его содержимое и вычисляет среднее значение чисел в файле.
-
-    Обновляет:
-        file_content_label: Отображает содержимое файла.
-        average_label: Показывает среднее значение чисел в файле.
-
-    Выводит сообщения об ошибках или информацию о состоянии файла.
-    """
     filename = file_entry.get()
 
     if not filename:
@@ -73,15 +52,6 @@ def process_file():
 
 # Функция для выполнения математических вычислений
 def calculate():
-    """
-    Выполняет вычисление выражения, введённого в поле калькулятора. 
-
-    Обновляет:
-        calc_result_label: Отображает результат вычисления или сообщение об ошибке.
-
-    Исключения:
-        Выводит сообщение "Ошибка ввода", если выражение не может быть вычислено.
-    """
     try:
         expression = calc_entry.get()
         result = eval(expression)
@@ -90,9 +60,36 @@ def calculate():
         calc_result_label.config(text="Ошибка ввода")
 
 
+# Функция для получения и отображения погоды
+def update_weather():
+    try:
+        api_key = "b9dc966956b5eb5f895cbdbad4e9c7f2"
+        city = "Ульяновск"
+        url = "http://api.openweathermap.org/data/2.5/weather"
+        params = {
+            "q": city,
+            "appid": api_key,
+            "units": "metric",
+            "lang": "ru"
+        }
+        response = requests.get(url, params=params)
+        weather_data = response.json()
+
+        if weather_data.get("cod") != 200:
+            weather_label.config(text="Ошибка получения погоды.")
+            return
+
+        temp = weather_data["main"]["temp"]
+        description = weather_data["weather"][0]["description"].capitalize()
+        weather_label.config(text=f"Погода в Ульяновске: {temp}°C, {description}")
+    except Exception as e:
+        weather_label.config(text="Не удалось получить данные о погоде.")
+
+
+
 # Инициализация интерфейса
 root = tk.Tk()
-root.title("Работа с файлами и калькулятор")
+root.title("Работа с файлами, калькулятор и погода")
 
 file_frame = tk.Frame(root)
 file_frame.pack(pady=10)
@@ -129,5 +126,17 @@ calc_button.pack()
 
 calc_result_label = tk.Label(calc_frame, text="Результат:")
 calc_result_label.pack(pady=5)
+
+# Виджет для погоды
+weather_frame = tk.Frame(root)
+weather_frame.pack(pady=20)
+
+weather_label = tk.Label(weather_frame, text="Погода в Ульяновске: Обновление...")
+weather_label.pack()
+
+weather_button = tk.Button(weather_frame, text="Обновить погоду", command=update_weather)
+weather_button.pack()
+
+update_weather()  # Обновить погоду при запуске
 
 root.mainloop()
